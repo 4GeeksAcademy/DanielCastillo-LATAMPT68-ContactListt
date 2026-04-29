@@ -1,24 +1,94 @@
-// Import necessary hooks and functions from React.
 import { useContext, useReducer, createContext } from "react";
-import storeReducer, { initialStore } from "../store"  // Import the reducer and the initial state.
+import storeReducer, { initialStore } from "../store";
 
-// Create a context to hold the global state of the application
-// We will call this global state the "store" to avoid confusion while using local states
-const StoreContext = createContext()
+const StoreContext = createContext();
 
-// Define a provider component that encapsulates the store and warps it in a context provider to 
-// broadcast the information throught all the app pages and components.
+const AGENDA = "erosdevfs";
+const API_URL = `https://playground.4geeks.com/contact/agendas/${AGENDA}`;
+
 export function StoreProvider({ children }) {
-    // Initialize reducer with the initial state.
-    const [store, dispatch] = useReducer(storeReducer, initialStore())
-    // Provide the store and dispatch method to all child components.
-    return <StoreContext.Provider value={{ store, dispatch }}>
-        {children}
+  const [store, dispatch] = useReducer(storeReducer, initialStore());
+
+  const actions = {
+    getContactList: async () => {
+      try {
+        const response = await fetch(API_URL);
+
+        if (response.status === 404) {
+          await fetch(API_URL, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            }
+          });
+
+          return actions.getContactList();
+        }
+
+        const data = await response.json();
+
+        dispatch({
+          type: "load_contactList",
+          payload: data.contacts
+        });
+      } catch (error) {
+        console.log(error);
+      }
+    },
+
+    createContact: async (formData) => {
+      try {
+        await fetch(`${API_URL}/contacts`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(formData)
+        });
+
+        await actions.getContactList();
+      } catch (error) {
+        console.log(error);
+      }
+    },
+
+    updateContact: async (id, formData) => {
+      try {
+        await fetch(`${API_URL}/contacts/${id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(formData)
+        });
+
+        await actions.getContactList();
+      } catch (error) {
+        console.log(error);
+      }
+    },
+
+    deleteContact: async (id) => {
+      try {
+        await fetch(`${API_URL}/contacts/${id}`, {
+          method: "DELETE"
+        });
+
+        await actions.getContactList();
+      } catch (error) {
+        console.log(error);
+      }
+    }
+  };
+
+  return (
+    <StoreContext.Provider value={{ store, dispatch, actions }}>
+      {children}
     </StoreContext.Provider>
+  );
 }
 
-// Custom hook to access the global state and dispatch function.
 export default function useGlobalReducer() {
-    const { dispatch, store } = useContext(StoreContext)
-    return { dispatch, store };
+  const { dispatch, store, actions } = useContext(StoreContext);
+  return { dispatch, store, actions };
 }
