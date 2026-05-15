@@ -1,39 +1,123 @@
-export const initialStore=()=>{
-  return{
-    message: null,
-    todos: [
-      {
-        id: 1,
-        title: "Make the bed",
-        background: null,
-      },
-      {
-        id: 2,
-        title: "Do my homework",
-        background: null,
-      }
-    ],
-    contacts: []
+const agendaSlug = "danielcastillo410";
+const baseURL = `https://playground.4geeks.com/contact/agendas/${agendaSlug}`;
+
+export const initialStore = () => {
+  return {
+    contacts: [],
+  };
+};
+
+export default function storeReducer(store, action = {}) {
+  switch (action.type) {
+    case "set_contacts":
+      return {
+        ...store,
+        contacts: action.payload,
+      };
+
+    case "add_contact":
+      return {
+        ...store,
+        contacts: [...store.contacts, action.payload],
+      };
+
+    case "update_contact":
+      return {
+        ...store,
+        contacts: store.contacts.map((contact) =>
+          contact.id === action.payload.id ? action.payload : contact
+        ),
+      };
+
+    case "delete_contact":
+      return {
+        ...store,
+        contacts: store.contacts.filter(
+          (contact) => contact.id !== action.payload
+        ),
+      };
+
+    default:
+      return store;
   }
 }
 
-export default function storeReducer(store, action = {}) {
-  switch(action.type){
-    case 'add_task':
+export const getContacts = async (dispatch) => {
+  try {
+    const response = await fetch(`${baseURL}/contacts`);
 
-      const { id,  color } = action.payload
+    if (response.status === 404) {
+      await fetch(baseURL, {
+        method: "POST",
+      });
 
-      return {
-        ...store,
-        todos: store.todos.map((todo) => (todo.id === id ? { ...todo, background: color } : todo))
-      };
-    case 'load_contactList':
+      return getContacts(dispatch);
+    }
 
-      return {
-        ...store, 
-        contacts: action.payload
-      };
-    default:
-      throw Error('Unknown action.');
-  }    
-}
+    const data = await response.json();
+
+    dispatch({
+      type: "set_contacts",
+      payload: data.contacts || [],
+    });
+  } catch (error) {
+    console.log("Error getting contacts:", error);
+  }
+};
+
+export const createContact = async (dispatch, contactData) => {
+  try {
+    const response = await fetch(`${baseURL}/contacts`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(contactData),
+    });
+
+    const data = await response.json();
+
+    dispatch({
+      type: "add_contact",
+      payload: data,
+    });
+  } catch (error) {
+    console.log("Error creating contact:", error);
+  }
+};
+
+export const updateContact = async (dispatch, contactId, contactData) => {
+  try {
+    const response = await fetch(`${baseURL}/contacts/${contactId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(contactData),
+    });
+
+    const data = await response.json();
+
+    dispatch({
+      type: "update_contact",
+      payload: data,
+    });
+  } catch (error) {
+    console.log("Error updating contact:", error);
+  }
+};
+
+export const deleteContact = async (dispatch, contactId) => {
+  try {
+    await fetch(`${baseURL}/contacts/${contactId}`, {
+      method: "DELETE",
+    });
+
+    dispatch({
+      type: "delete_contact",
+      payload: contactId,
+    });
+  } catch (error) {
+    console.log("Error deleting contact:", error);
+  }
+};
