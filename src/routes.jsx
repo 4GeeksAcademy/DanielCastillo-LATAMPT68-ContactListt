@@ -6,15 +6,13 @@ import {
 
 import { Layout } from "./pages/Layout";
 import { Home } from "./pages/Home";
-import { AddContact } from "./pages/AddContact";
-import { EditContact } from "./pages/EditContact";
+import { Demo } from "./pages/Demo";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
     <Route path="/" element={<Layout />} errorElement={<h1>Not found!</h1>}>
       <Route path="/" element={<Home />} />
-      <Route path="/add-contact" element={<AddContact />} />
-      <Route path="/edit-contact/:id" element={<EditContact />} />
+      <Route path="/demo" element={<Demo />} />
     </Route>
   )
 );

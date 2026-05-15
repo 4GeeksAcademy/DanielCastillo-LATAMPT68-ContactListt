@@ -1,78 +1,180 @@
-import { useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
-import { getContacts, deleteContact } from "../store.js";
+import { Button, Modal } from "react-bootstrap";
+import { getContacts, updateContact, deleteContact } from "../store.js";
 
 export const Home = () => {
   const { store, dispatch } = useGlobalReducer();
 
+  const [show, setShow] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+  });
+
   useEffect(() => {
     getContacts(dispatch);
   }, []);
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const openEditModal = (item) => {
+    setEditItem(item.id);
+
+    setFormData({
+      name: item.name,
+      email: item.email,
+      phone: item.phone,
+      address: item.address,
+    });
+
+    setShow(true);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    await updateContact(dispatch, editItem, formData);
+
+    setShow(false);
+  };
 
   const handleDelete = async (id) => {
     await deleteContact(dispatch, id);
   };
 
   return (
-    <div className="container mt-4">
-      <div className="d-flex justify-content-end mb-3">
-        <Link to="/add-contact" className="btn btn-success">
-          Add new contact
-        </Link>
-      </div>
+    <>
+      <ul className="list-group w-75 mx-auto">
+        {store.contacts?.map((item) => (
+          <li
+            key={item.id}
+            className="list-group-item d-flex justify-content-between"
+          >
+            <div className="w-50 d-flex justify-content-start">
+              <img
+                src="https://static.vecteezy.com/system/resources/thumbnails/032/176/191/small/business-avatar-profile-black-icon-man-of-user-symbol-in-trendy-flat-style-isolated-on-male-profile-people-diverse-face-for-social-network-or-web-vector.jpg"
+                className="img-fluid mt-2 ms-5"
+                style={{ height: "130px", width: "130px" }}
+                alt="contact"
+              />
 
-      <ul className="list-group">
-        {store.contacts.map((contact) => (
-          <li key={contact.id} className="list-group-item">
-            <div className="row align-items-center">
-              <div className="col-md-2 text-center">
-                <img
-                  src="https://cdn-icons-png.flaticon.com/512/149/149071.png"
-                  alt="contact"
-                  className="rounded-circle img-fluid"
-                  style={{ maxWidth: "120px" }}
-                />
+              <div className="mt-2 ms-5">
+                <h5>{item.name}</h5>
+
+                <div className="d-flex align-items-center mb-1">
+                  <i className="fa-solid fa-location-dot pe-3"></i>
+                  <p className="mb-0 fs-6">{item.address}</p>
+                </div>
+
+                <div className="d-flex align-items-center mb-1">
+                  <i className="fa-solid fa-phone-flip pe-3"></i>
+                  <p className="mb-0 small">{item.phone}</p>
+                </div>
+
+                <div className="d-flex align-items-center">
+                  <i className="fa-solid fa-envelope pe-3"></i>
+                  <p className="mb-0 small">{item.email}</p>
+                </div>
               </div>
+            </div>
 
-              <div className="col-md-8">
-                <h4>{contact.name}</h4>
+            <div className="me-5 mt-2">
+              <button
+                style={{ border: "none", backgroundColor: "white" }}
+                onClick={() => openEditModal(item)}
+                className="me-4"
+              >
+                <i className="fa-solid fa-pencil"></i>
+              </button>
 
-                <p className="mb-1 text-secondary">
-                  <i className="fa-solid fa-location-dot me-2"></i>
-                  {contact.address}
-                </p>
-
-                <p className="mb-1 text-secondary">
-                  <i className="fa-solid fa-phone me-2"></i>
-                  {contact.phone}
-                </p>
-
-                <p className="mb-1 text-secondary">
-                  <i className="fa-solid fa-envelope me-2"></i>
-                  {contact.email}
-                </p>
-              </div>
-
-              <div className="col-md-2 text-end">
-                <Link
-                  to={`/edit-contact/${contact.id}`}
-                  className="btn btn-light me-2"
-                >
-                  <i className="fa-solid fa-pencil"></i>
-                </Link>
-
-                <button
-                  className="btn btn-light"
-                  onClick={() => handleDelete(contact.id)}
-                >
-                  <i className="fa-solid fa-trash-can"></i>
-                </button>
-              </div>
+              <button
+                style={{ border: "none", backgroundColor: "white" }}
+                onClick={() => handleDelete(item.id)}
+              >
+                <i className="fa-solid fa-trash-can"></i>
+              </button>
             </div>
           </li>
         ))}
       </ul>
-    </div>
+
+      <Modal show={show} onHide={() => setShow(false)}>
+        <Modal.Body>
+          <form onSubmit={handleSubmit} className="row g-3 needs-validation">
+            <div className="mb-3">
+              <label className="form-label">Full Name</label>
+              <input
+                type="text"
+                value={formData.name}
+                className="form-control"
+                placeholder="Edit name"
+                name="name"
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label">Email</label>
+              <input
+                type="email"
+                value={formData.email}
+                className="form-control"
+                placeholder="Edit email"
+                name="email"
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label">Phone</label>
+              <input
+                type="text"
+                value={formData.phone}
+                className="form-control"
+                placeholder="Edit phone"
+                name="phone"
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label">Address</label>
+              <input
+                type="text"
+                value={formData.address}
+                className="form-control"
+                placeholder="Edit address"
+                name="address"
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <button type="submit" className="btn btn-primary mb-3 form-control">
+              Save
+            </button>
+          </form>
+        </Modal.Body>
+
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShow(false)}>
+            Go back
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    </>
   );
 };
